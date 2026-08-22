@@ -225,8 +225,9 @@ export function TrackerSection() {
                                           if (query && !shortId.includes(query.toLowerCase()))
                                             return null;
                                           const st = status[id] ?? "unattempted";
-                                          return (
-                                            <tr key={id} className="border-t border-border">
+                                           return (
+                                             <Fragment key={id}>
+                                             <tr className="border-t border-border">
                                               <td className="py-2 font-mono text-xs text-foreground">
                                                 {shortId}
                                               </td>
