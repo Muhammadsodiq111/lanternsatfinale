@@ -33,18 +33,46 @@ export function ReviewSection() {
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [understood, setUnderstood] = useState<Record<string, boolean>>({});
 
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [subject, setSubject] = useState<"all" | "math" | "english">("all");
+  const [module, setModule] = useState("all");
+  const [levels, setLevels] = useState<Level[]>([]);
+
+  const modules = useMemo(() => {
+    const set = new Set<string>();
+    for (const row of rows) {
+      if (subject !== "all" && row.subject !== subject) continue;
+      if (row.module) set.add(row.module);
+    }
+    return Array.from(set).sort();
+  }, [rows, subject]);
+
+  const filtered = useMemo(
+    () =>
+      rows.filter((row) => {
+        if (subject !== "all" && row.subject !== subject) return false;
+        if (module !== "all" && row.module !== module) return false;
+        if (levels.length && !levels.includes(row.level)) return false;
+        return true;
+      }),
+    [rows, subject, module, levels],
+  );
+
+  const activeFilterCount =
+    (subject === "all" ? 0 : 1) + (module === "all" ? 0 : 1) + (levels.length ? 1 : 0);
+
   const breakdown = useMemo(() => {
     const counts = Object.fromEntries(DIFFICULTY_LEVELS.map((l) => [l, 0])) as Record<
       Level,
       number
     >;
-    for (const row of rows) counts[row.level] = (counts[row.level] ?? 0) + 1;
+    for (const row of filtered) counts[row.level] = (counts[row.level] ?? 0) + 1;
     return DIFFICULTY_LEVELS.map((level) => ({
       level,
       count: counts[level],
-      pct: rows.length ? Math.round((counts[level] / rows.length) * 100) : 0,
+      pct: filtered.length ? Math.round((counts[level] / filtered.length) * 100) : 0,
     }));
-  }, [rows]);
+  }, [filtered]);
 
   const list = PROBLEMS.filter((p) => (tab === "todo" ? !understood[p.id] : understood[p.id]));
   const active = openIndex !== null ? list[openIndex] : undefined;
@@ -103,18 +131,124 @@ export function ReviewSection() {
         </div>
         <button
           type="button"
-          className="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-bold text-foreground"
+          aria-expanded={filtersOpen}
+          onClick={() => setFiltersOpen((v) => !v)}
+          className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-bold transition-colors ${
+            filtersOpen || activeFilterCount
+              ? "border-primary bg-primary/5 text-primary"
+              : "border-border bg-card text-foreground"
+          }`}
         >
           <SlidersHorizontal size={15} /> Filters
+          {activeFilterCount ? (
+            <span className="rounded-md bg-primary px-1.5 py-0.5 text-xs text-primary-foreground">
+              {activeFilterCount}
+            </span>
+          ) : null}
         </button>
       </div>
+
+      {filtersOpen ? (
+        <section className="rounded-3xl border border-border bg-card p-5">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <p className="text-[11px] font-bold tracking-[0.12em] text-muted-foreground uppercase">
+                Subject
+              </p>
+              <div className="mt-2 flex gap-2">
+                {(["all", "math", "english"] as const).map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => {
+                      setSubject(s);
+                      setModule("all");
+                    }}
+                    className={`rounded-xl px-3 py-1.5 text-xs font-bold capitalize transition-colors ${
+                      subject === s
+                        ? "bg-primary text-primary-foreground"
+                        : "border border-border text-foreground"
+                    }`}
+                  >
+                    {s === "english" ? "Reading & Writing" : s}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <p className="text-[11px] font-bold tracking-[0.12em] text-muted-foreground uppercase">
+                Module
+              </p>
+              <select
+                value={module}
+                onChange={(e) => setModule(e.target.value)}
+                className="mt-2 w-full rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+              >
+                <option value="all">All modules</option>
+                {modules.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="sm:col-span-2">
+              <p className="text-[11px] font-bold tracking-[0.12em] text-muted-foreground uppercase">
+                Difficulty
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {DIFFICULTY_LEVELS.map((level) => {
+                  const on = levels.includes(level);
+                  return (
+                    <button
+                      key={level}
+                      type="button"
+                      onClick={() =>
+                        setLevels((prev) =>
+                          prev.includes(level) ? prev.filter((l) => l !== level) : [...prev, level],
+                        )
+                      }
+                      className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-colors ${
+                        on
+                          ? "bg-primary text-primary-foreground"
+                          : `border border-border ${LEVEL_META[level].text}`
+                      }`}
+                    >
+                      {LEVEL_META[level].label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 flex items-center justify-between gap-3 border-t border-border pt-4">
+            <p className="text-xs text-muted-foreground">
+              Showing {filtered.length} of {rows.length} questions
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setSubject("all");
+                setModule("all");
+                setLevels([]);
+              }}
+              className="rounded-xl border border-border px-3 py-1.5 text-xs font-bold text-muted-foreground hover:text-foreground"
+            >
+              Clear filters
+            </button>
+          </div>
+        </section>
+      ) : null}
 
       <section className="rounded-3xl border border-border bg-card p-5 shadow-[0_20px_60px_-45px_rgba(20,40,90,0.45)]">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h3 className="font-display text-lg font-semibold text-foreground">Question bank</h3>
           <p className="text-sm text-muted-foreground">
-            <span className="font-semibold text-primary">{rows.length}</span> questions available to
-            review from
+            <span className="font-semibold text-primary">{filtered.length}</span> questions available
+            to review from
           </p>
         </div>
 

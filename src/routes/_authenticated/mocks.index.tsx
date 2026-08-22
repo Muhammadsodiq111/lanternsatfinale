@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowRight, Settings2 } from "lucide-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { ArrowRight } from "lucide-react";
 import { useState } from "react";
 
 import { DashboardSidebar } from "@/components/dashboard/sidebar";
@@ -36,25 +36,13 @@ function MocksPage() {
       <main className="min-w-0 flex-1 px-6 py-8">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h1 className="font-display text-2xl font-semibold text-foreground">Mock Exams</h1>
-          <Link
-            to="/mocks/manage"
-            className="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground hover:bg-accent"
-          >
-            <Settings2 size={15} /> Manage mocks
-          </Link>
         </div>
 
         {isLoading ? (
           <p className="mt-8 text-sm text-muted-foreground">Loading mocks…</p>
         ) : exams.length === 0 ? (
-          <div className="mt-8 rounded-2xl border border-dashed border-border bg-card p-10 text-center">
-            <p className="text-sm text-muted-foreground">No mock exams yet.</p>
-            <Link
-              to="/mocks/manage"
-              className="mt-4 inline-flex rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
-            >
-              Create your first mock
-            </Link>
+          <div className="mt-8 flex min-h-[240px] items-center justify-center rounded-2xl border border-dashed border-border bg-card p-10 text-center">
+            <p className="font-display text-xl font-semibold text-muted-foreground">Coming soon</p>
           </div>
         ) : (
           <div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-3">

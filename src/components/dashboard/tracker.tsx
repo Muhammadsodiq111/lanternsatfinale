@@ -3,6 +3,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { Check, ExternalLink, NotebookPen, RotateCcw, Star, X } from "lucide-react";
 import { DIFFICULTY_LEVELS, questionBankQuery, type BankRow, type Level } from "@/lib/practice";
 import { MODULE_CATALOG } from "@/lib/module-catalog";
+import { usePersistentState } from "@/lib/local-store";
 
 type Bucket = { label: string; level: Level; ids: string[] };
 type Topic = { title: string; total: number; buckets: Bucket[] };
@@ -72,9 +73,9 @@ export function TrackerSection() {
   const { data: rows } = useSuspenseQuery(questionBankQuery);
   const [openTopic, setOpenTopic] = useState<string | null>(null);
   const [openBucket, setOpenBucket] = useState<string | null>(null);
-  const [status, setStatus] = useState<Record<string, Status>>({});
-  const [starred, setStarred] = useState<Record<string, boolean>>({});
-  const [notes, setNotes] = useState<Record<string, string>>({});
+  const [status, setStatus] = usePersistentState<Record<string, Status>>("tracker-status", {});
+  const [starred, setStarred] = usePersistentState<Record<string, boolean>>("tracker-starred", {});
+  const [notes, setNotes] = usePersistentState<Record<string, string>>("tracker-notes", {});
   const [openNote, setOpenNote] = useState<string | null>(null);
   const [query, setQuery] = useState("");
 
