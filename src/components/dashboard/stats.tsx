@@ -21,7 +21,7 @@ const TIME_BY_AREA = [
 ];
 
 export function StatsSection() {
-  const { data: rows = [] } = useQuery(questionBankQuery);
+  const { data: rows } = useSuspenseQuery(questionBankQuery);
   const [progressTf, setProgressTf] = useState<Tf>("all");
   const [timeTf, setTimeTf] = useState<Tf>("all");
   const [subtopicTab, setSubtopicTab] = useState<"strongest" | "weakest">("strongest");
