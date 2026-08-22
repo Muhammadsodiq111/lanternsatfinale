@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { ChevronDown, Settings2 } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 
 import { practiceQuestionsQuery } from "@/lib/practice";
 

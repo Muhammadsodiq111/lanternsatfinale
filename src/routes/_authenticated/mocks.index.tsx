@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ArrowRight, Settings2 } from "lucide-react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
 import { DashboardSidebar } from "@/components/dashboard/sidebar";
