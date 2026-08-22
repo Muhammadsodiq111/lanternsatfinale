@@ -1,0 +1,267 @@
+import { useState } from "react";
+import { Check, ChevronLeft, ChevronRight, SlidersHorizontal, X } from "lucide-react";
+
+type Problem = {
+  id: string;
+  prompt: string;
+  module: string;
+  difficulty: "Easy" | "Medium" | "Hard";
+  date: string;
+  source: string;
+  choices: string[];
+  answer: number;
+  picked: number;
+  explanation: string;
+};
+
+const PROBLEMS: Problem[] = [];
+
+export function ReviewSection() {
+  const [tab, setTab] = useState<"todo" | "done">("todo");
+  const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const [notes, setNotes] = useState<Record<string, string>>({});
+  const [understood, setUnderstood] = useState<Record<string, boolean>>({});
+
+  const list = PROBLEMS.filter((p) => (tab === "todo" ? !understood[p.id] : understood[p.id]));
+  const active = openIndex !== null ? list[openIndex] : undefined;
+
+  if (active) {
+    return (
+      <ProblemView
+        problem={active}
+        position={`${openIndex! + 1} / ${list.length}`}
+        note={notes[active.id] ?? ""}
+        understood={!!understood[active.id]}
+        onNote={(v) => setNotes((p) => ({ ...p, [active.id]: v }))}
+        onUnderstood={() => setUnderstood((p) => ({ ...p, [active.id]: !p[active.id] }))}
+        onExit={() => setOpenIndex(null)}
+        onPrev={() => setOpenIndex((i) => Math.max(0, (i ?? 0) - 1))}
+        onNext={() => setOpenIndex((i) => Math.min(list.length - 1, (i ?? 0) + 1))}
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex gap-3">
+          {(
+            [
+              { key: "todo", label: "To Review" },
+              { key: "done", label: "Reviewed" },
+            ] as const
+          ).map((t) => {
+            const count = PROBLEMS.filter((p) =>
+              t.key === "todo" ? !understood[p.id] : understood[p.id],
+            ).length;
+            return (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => setTab(t.key)}
+                className={`flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-bold transition-colors ${
+                  tab === t.key
+                    ? "bg-primary text-primary-foreground"
+                    : "border border-border bg-card text-foreground"
+                }`}
+              >
+                {t.label}
+                <span
+                  className={`rounded-md px-1.5 py-0.5 text-xs ${
+                    tab === t.key ? "bg-primary-foreground/20" : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        <button
+          type="button"
+          className="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-bold text-foreground"
+        >
+          <SlidersHorizontal size={15} /> Filters
+        </button>
+      </div>
+
+      <section className="overflow-hidden rounded-3xl border border-border bg-card shadow-[0_20px_60px_-45px_rgba(20,40,90,0.45)]">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border bg-muted/50 text-[11px] font-bold tracking-[0.12em] text-muted-foreground uppercase">
+                <th className="px-5 py-3 text-left font-bold">Problem</th>
+                <th className="px-4 py-3 text-left font-bold">Module</th>
+                <th className="px-4 py-3 text-left font-bold">Difficulty</th>
+                <th className="px-4 py-3 text-left font-bold">Date</th>
+                <th className="px-4 py-3 text-left font-bold">Source</th>
+              </tr>
+            </thead>
+            <tbody>
+              {list.map((p, i) => (
+                <tr
+                  key={p.id}
+                  onClick={() => setOpenIndex(i)}
+                  className="cursor-pointer border-b border-border transition-colors last:border-0 hover:bg-accent"
+                >
+                  <td className="px-5 py-3.5 text-foreground">{p.prompt}</td>
+                  <td className="px-4 py-3.5 text-muted-foreground">{p.module}</td>
+                  <td className="px-4 py-3.5">
+                    <DifficultyTag value={p.difficulty} />
+                  </td>
+                  <td className="px-4 py-3.5 text-muted-foreground">{p.date}</td>
+                  <td className="px-4 py-3.5 text-muted-foreground">{p.source}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {list.length === 0 ? (
+          <p className="px-5 py-20 text-center text-sm text-muted-foreground">
+            {tab === "todo"
+              ? "Nothing to review yet — missed questions from practice and mocks land here."
+              : "No reviewed problems yet."}
+          </p>
+        ) : null}
+      </section>
+    </div>
+  );
+}
+
+function DifficultyTag({ value }: { value: Problem["difficulty"] }) {
+  const tone =
+    value === "Easy" ? "text-emerald" : value === "Medium" ? "text-amber" : "text-flame";
+  return <span className={`text-xs font-bold ${tone}`}>{value}</span>;
+}
+
+function ProblemView({
+  problem,
+  position,
+  note,
+  understood,
+  onNote,
+  onUnderstood,
+  onExit,
+  onPrev,
+  onNext,
+}: {
+  problem: Problem;
+  position: string;
+  note: string;
+  understood: boolean;
+  onNote: (v: string) => void;
+  onUnderstood: () => void;
+  onExit: () => void;
+  onPrev: () => void;
+  onNext: () => void;
+}) {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <button
+          type="button"
+          onClick={onExit}
+          className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"
+        >
+          <X size={15} /> Exit
+        </button>
+        <div className="flex items-center gap-3 text-sm">
+          <button type="button" onClick={onPrev} aria-label="Previous problem">
+            <ChevronLeft size={18} className="text-muted-foreground" />
+          </button>
+          <span className="font-display font-semibold text-foreground">{problem.module}</span>
+          <DifficultyTag value={problem.difficulty} />
+          <span className="text-muted-foreground">{position}</span>
+          <button type="button" onClick={onNext} aria-label="Next problem">
+            <ChevronRight size={18} className="text-muted-foreground" />
+          </button>
+        </div>
+      </div>
+
+      <div className="grid gap-5 rounded-3xl border border-border bg-card p-6 lg:grid-cols-2">
+        <div className="space-y-4">
+          <p className="text-base text-foreground">{problem.prompt}</p>
+          <ul className="space-y-3">
+            {problem.choices.map((choice, i) => {
+              const isAnswer = i === problem.answer;
+              const isPicked = i === problem.picked;
+              return (
+                <li
+                  key={choice}
+                  className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm ${
+                    isAnswer
+                      ? "border-emerald bg-emerald/10"
+                      : isPicked
+                        ? "border-flame bg-flame/10"
+                        : "border-border"
+                  }`}
+                >
+                  <span
+                    className={`grid size-7 shrink-0 place-items-center rounded-lg text-xs font-bold ${
+                      isAnswer
+                        ? "bg-emerald text-primary-foreground"
+                        : isPicked
+                          ? "bg-flame text-primary-foreground"
+                          : "bg-muted text-muted-foreground"
+                    }`}
+                  >
+                    {String.fromCharCode(65 + i)}
+                  </span>
+                  <span className="text-foreground">{choice}</span>
+                </li>
+              );
+            })}
+          </ul>
+
+          <div>
+            <p className="font-display text-sm font-semibold text-foreground">
+              Notes about this problem
+            </p>
+            <textarea
+              value={note}
+              onChange={(e) => onNote(e.target.value)}
+              placeholder="Why did you miss this? What will you remember next time?"
+              className="mt-2 h-24 w-full resize-y rounded-2xl border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+            />
+          </div>
+        </div>
+
+        <div className="flex flex-col justify-between gap-6 lg:border-l lg:border-border lg:pl-6">
+          <div>
+            <h3 className="font-display text-base font-semibold text-foreground">Explanation</h3>
+            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+              {problem.explanation}
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={onUnderstood}
+              className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-bold transition-colors ${
+                understood ? "border-emerald bg-emerald/10 text-emerald" : "border-border text-foreground"
+              }`}
+            >
+              <span
+                className={`grid size-5 place-items-center rounded-md border ${
+                  understood ? "border-emerald bg-emerald text-primary-foreground" : "border-border"
+                }`}
+              >
+                {understood ? <Check size={12} /> : null}
+              </span>
+              I understand this problem
+            </button>
+            <button
+              type="button"
+              onClick={onNext}
+              className="flex items-center gap-1 rounded-xl bg-emerald px-5 py-2.5 text-sm font-bold text-primary-foreground"
+            >
+              Next <ChevronRight size={15} />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
