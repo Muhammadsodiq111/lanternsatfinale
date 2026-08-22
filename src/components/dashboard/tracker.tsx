@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Check, ExternalLink, NotebookPen, RotateCcw, Star, X } from "lucide-react";
 import { DIFFICULTY_LEVELS, questionBankQuery, type BankRow, type Level } from "@/lib/practice";
@@ -74,6 +74,8 @@ export function TrackerSection() {
   const [openBucket, setOpenBucket] = useState<string | null>(null);
   const [status, setStatus] = useState<Record<string, Status>>({});
   const [starred, setStarred] = useState<Record<string, boolean>>({});
+  const [notes, setNotes] = useState<Record<string, string>>({});
+  const [openNote, setOpenNote] = useState<string | null>(null);
   const [query, setQuery] = useState("");
 
   const domains = useMemo(() => buildDomains(rows), [rows]);
@@ -119,6 +121,8 @@ export function TrackerSection() {
               onClick={() => {
                 setStatus({});
                 setStarred({});
+                setNotes({});
+                setOpenNote(null);
               }}
               className="flex items-center gap-1.5 rounded-xl border border-border px-3 py-1.5 text-xs font-bold text-muted-foreground hover:text-foreground"
             >
@@ -223,8 +227,9 @@ export function TrackerSection() {
                                           if (query && !shortId.includes(query.toLowerCase()))
                                             return null;
                                           const st = status[id] ?? "unattempted";
-                                          return (
-                                            <tr key={id} className="border-t border-border">
+                                           return (
+                                             <Fragment key={id}>
+                                             <tr className="border-t border-border">
                                               <td className="py-2 font-mono text-xs text-foreground">
                                                 {shortId}
                                               </td>
@@ -266,14 +271,64 @@ export function TrackerSection() {
                                                   )}
                                                 </button>
                                               </td>
-                                              <td className="py-2 text-center">
-                                                <NotebookPen
-                                                  size={16}
-                                                  className="mx-auto text-muted-foreground"
-                                                />
-                                              </td>
-                                            </tr>
-                                          );
+                                               <td className="py-2 text-center">
+                                                 <button
+                                                   type="button"
+                                                   aria-label="Toggle note"
+                                                   aria-expanded={openNote === id}
+                                                   onClick={() =>
+                                                     setOpenNote(openNote === id ? null : id)
+                                                   }
+                                                 >
+                                                   <NotebookPen
+                                                     size={16}
+                                                     className={`mx-auto ${
+                                                       notes[id]?.trim()
+                                                         ? "text-primary"
+                                                         : "text-muted-foreground"
+                                                     }`}
+                                                   />
+                                                 </button>
+                                               </td>
+                                             </tr>
+                                             {openNote === id ? (
+                                               <tr className="border-t border-border">
+                                                 <td colSpan={4} className="px-1 py-3">
+                                                   <textarea
+                                                     value={notes[id] ?? ""}
+                                                     onChange={(e) =>
+                                                       setNotes((p) => ({
+                                                         ...p,
+                                                         [id]: e.target.value,
+                                                       }))
+                                                     }
+                                                     placeholder="Write a note for this question…"
+                                                     rows={3}
+                                                     className="w-full resize-y rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+                                                   />
+                                                   <div className="mt-2 flex justify-end gap-2">
+                                                     <button
+                                                       type="button"
+                                                       onClick={() =>
+                                                         setNotes((p) => ({ ...p, [id]: "" }))
+                                                       }
+                                                       className="rounded-lg border border-border px-2.5 py-1 text-xs font-bold text-muted-foreground hover:text-foreground"
+                                                     >
+                                                       Clear
+                                                     </button>
+                                                     <button
+                                                       type="button"
+                                                       onClick={() => setOpenNote(null)}
+                                                       className="rounded-lg border border-border px-2.5 py-1 text-xs font-bold text-foreground hover:bg-accent"
+                                                     >
+                                                       Done
+                                                     </button>
+                                                   </div>
+                                                 </td>
+                                               </tr>
+                                             ) : null}
+                                             </Fragment>
+                                           );
                                         })}
                                       </tbody>
                                     </table>
