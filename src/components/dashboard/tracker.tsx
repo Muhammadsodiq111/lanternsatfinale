@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Check, ExternalLink, NotebookPen, RotateCcw, Star, X } from "lucide-react";
 import { DIFFICULTY_LEVELS, questionBankQuery, type BankRow, type Level } from "@/lib/practice";
 import { MODULE_CATALOG } from "@/lib/module-catalog";
