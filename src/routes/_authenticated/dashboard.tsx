@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { ChevronLeft, ChevronRight, Flame, LogOut } from "lucide-react";
+import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router";
+import { ChevronLeft, ChevronRight, Flame, LogOut, RotateCcw } from "lucide-react";
 
 import { DashboardSidebar } from "@/components/dashboard/sidebar";
 import { ModulesSection } from "@/components/dashboard/modules";
@@ -8,13 +8,27 @@ import { CoursesSection } from "@/components/dashboard/courses";
 import { StatsSection } from "@/components/dashboard/stats";
 import { TrackerSection } from "@/components/dashboard/tracker";
 import { ReviewSection } from "@/components/dashboard/review";
+import { BankBoundary } from "@/components/dashboard/bank-boundary";
 import { supabase } from "@/integrations/supabase/external";
 import { clearSessionCache } from "@/lib/auth-session";
 import { lessonProgressQuery } from "@/lib/lesson-progress";
+import { questionBankQuery } from "@/lib/practice";
 import { ALL_LESSONS } from "@/lib/courses";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
+  loader: ({ context }) => {
+    context.queryClient.ensureQueryData(questionBankQuery);
+  },
+  errorComponent: DashboardError,
+  notFoundComponent: () => (
+    <div className="rounded-3xl border border-dashed border-border bg-card p-12 text-center">
+      <h2 className="font-display text-2xl font-semibold text-foreground">Nothing here yet</h2>
+      <p className="mt-2 text-sm text-muted-foreground">
+        We couldn't find that dashboard section.
+      </p>
+    </div>
+  ),
   validateSearch: (search: Record<string, unknown>) => ({
     section: typeof search['section'] === "string" ? (search['section'] as string) : "Home",
   }),
@@ -27,6 +41,34 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
     ],
   }),
 });
+
+function DashboardError({ error, reset }: { error: Error; reset: () => void }) {
+  const router = useRouter();
+  console.error(error);
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-sky px-5">
+      <div className="max-w-md rounded-3xl border border-border bg-card p-10 text-center shadow-[0_20px_60px_-45px_rgba(20,40,90,0.45)]">
+        <h2 className="font-display text-xl font-semibold text-foreground">
+          Your dashboard didn't load
+        </h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Something went wrong while loading your study data.
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            router.invalidate();
+            reset();
+          }}
+          className="mt-6 inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground"
+        >
+          <RotateCcw size={15} /> Try again
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function DashboardPage() {
   const { user } = Route.useRouteContext();
@@ -67,11 +109,17 @@ function DashboardPage() {
           ) : active === "Courses" ? (
             <CoursesSection />
           ) : active === "Stats" ? (
-            <StatsSection />
+            <BankBoundary rows={3}>
+              <StatsSection />
+            </BankBoundary>
           ) : active === "Tracker" ? (
-            <TrackerSection />
+            <BankBoundary rows={4}>
+              <TrackerSection />
+            </BankBoundary>
           ) : active === "Review" ? (
-            <ReviewSection />
+            <BankBoundary rows={2}>
+              <ReviewSection />
+            </BankBoundary>
           ) : (
             <div className="rounded-3xl border border-dashed border-border bg-card p-12 text-center">
               <h2 className="font-display text-2xl font-semibold text-foreground">{active}</h2>
