@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { DIFFICULTY_LEVELS, questionBankQuery, type Level } from "@/lib/practice";
 
 type Tf = "week" | "month" | "all";
@@ -21,7 +21,7 @@ const TIME_BY_AREA = [
 ];
 
 export function StatsSection() {
-  const { data: rows = [] } = useQuery(questionBankQuery);
+  const { data: rows } = useSuspenseQuery(questionBankQuery);
   const [progressTf, setProgressTf] = useState<Tf>("all");
   const [timeTf, setTimeTf] = useState<Tf>("all");
   const [subtopicTab, setSubtopicTab] = useState<"strongest" | "weakest">("strongest");

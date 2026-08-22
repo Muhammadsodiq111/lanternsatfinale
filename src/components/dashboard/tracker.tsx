@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Check, ExternalLink, NotebookPen, RotateCcw, Star, X } from "lucide-react";
 import { DIFFICULTY_LEVELS, questionBankQuery, type BankRow, type Level } from "@/lib/practice";
 import { MODULE_CATALOG } from "@/lib/module-catalog";
@@ -69,7 +69,7 @@ const TONE: Record<Level, string> = {
 };
 
 export function TrackerSection() {
-  const { data: rows = [] } = useQuery(questionBankQuery);
+  const { data: rows } = useSuspenseQuery(questionBankQuery);
   const [openTopic, setOpenTopic] = useState<string | null>(null);
   const [openBucket, setOpenBucket] = useState<string | null>(null);
   const [status, setStatus] = useState<Record<string, Status>>({});

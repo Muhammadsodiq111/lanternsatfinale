@@ -1,5 +1,8 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Check, ChevronLeft, ChevronRight, SlidersHorizontal, X } from "lucide-react";
+
+import { DIFFICULTY_LEVELS, questionBankQuery, type Level } from "@/lib/practice";
 
 type Problem = {
   id: string;
@@ -14,13 +17,34 @@ type Problem = {
   explanation: string;
 };
 
+const LEVEL_META: Record<Level, { label: string; bar: string; text: string }> = {
+  easy: { label: "Easy", bar: "bg-emerald", text: "text-emerald" },
+  medium: { label: "Medium", bar: "bg-amber", text: "text-amber" },
+  hard: { label: "Hard", bar: "bg-flame", text: "text-flame" },
+  challenge: { label: "Challenge", bar: "bg-violet", text: "text-violet" },
+};
+
 const PROBLEMS: Problem[] = [];
 
 export function ReviewSection() {
+  const { data: rows } = useSuspenseQuery(questionBankQuery);
   const [tab, setTab] = useState<"todo" | "done">("todo");
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [understood, setUnderstood] = useState<Record<string, boolean>>({});
+
+  const breakdown = useMemo(() => {
+    const counts = Object.fromEntries(DIFFICULTY_LEVELS.map((l) => [l, 0])) as Record<
+      Level,
+      number
+    >;
+    for (const row of rows) counts[row.level] = (counts[row.level] ?? 0) + 1;
+    return DIFFICULTY_LEVELS.map((level) => ({
+      level,
+      count: counts[level],
+      pct: rows.length ? Math.round((counts[level] / rows.length) * 100) : 0,
+    }));
+  }, [rows]);
 
   const list = PROBLEMS.filter((p) => (tab === "todo" ? !understood[p.id] : understood[p.id]));
   const active = openIndex !== null ? list[openIndex] : undefined;
@@ -84,6 +108,35 @@ export function ReviewSection() {
           <SlidersHorizontal size={15} /> Filters
         </button>
       </div>
+
+      <section className="rounded-3xl border border-border bg-card p-5 shadow-[0_20px_60px_-45px_rgba(20,40,90,0.45)]">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h3 className="font-display text-lg font-semibold text-foreground">Question bank</h3>
+          <p className="text-sm text-muted-foreground">
+            <span className="font-semibold text-primary">{rows.length}</span> questions available to
+            review from
+          </p>
+        </div>
+
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {breakdown.map(({ level, count, pct }) => (
+            <div key={level} className="rounded-2xl border border-border p-4">
+              <div className="flex items-baseline justify-between">
+                <p className={`text-xs font-bold tracking-[0.12em] uppercase ${LEVEL_META[level].text}`}>
+                  {LEVEL_META[level].label}
+                </p>
+                <p className="font-display text-lg font-semibold text-foreground">{count}</p>
+              </div>
+              <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-muted">
+                <div className={`h-full rounded-full ${LEVEL_META[level].bar}`} style={{ width: `${pct}%` }} />
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">{pct}% of the bank</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+
 
       <section className="overflow-hidden rounded-3xl border border-border bg-card shadow-[0_20px_60px_-45px_rgba(20,40,90,0.45)]">
         <div className="overflow-x-auto">
