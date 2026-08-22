@@ -69,7 +69,7 @@ const TONE: Record<Level, string> = {
 };
 
 export function TrackerSection() {
-  const { data: rows = [] } = useQuery(questionBankQuery);
+  const { data: rows } = useSuspenseQuery(questionBankQuery);
   const [openTopic, setOpenTopic] = useState<string | null>(null);
   const [openBucket, setOpenBucket] = useState<string | null>(null);
   const [status, setStatus] = useState<Record<string, Status>>({});
