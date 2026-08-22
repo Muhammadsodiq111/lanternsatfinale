@@ -1,5 +1,8 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { Check, ChevronLeft, ChevronRight, SlidersHorizontal, X } from "lucide-react";
+
+import { DIFFICULTY_LEVELS, questionBankQuery, type Level } from "@/lib/practice";
 
 type Problem = {
   id: string;
@@ -14,13 +17,34 @@ type Problem = {
   explanation: string;
 };
 
+const LEVEL_META: Record<Level, { label: string; bar: string; text: string }> = {
+  easy: { label: "Easy", bar: "bg-emerald", text: "text-emerald" },
+  medium: { label: "Medium", bar: "bg-amber", text: "text-amber" },
+  hard: { label: "Hard", bar: "bg-flame", text: "text-flame" },
+  challenge: { label: "Challenge", bar: "bg-violet", text: "text-violet" },
+};
+
 const PROBLEMS: Problem[] = [];
 
 export function ReviewSection() {
+  const { data: rows } = useSuspenseQuery(questionBankQuery);
   const [tab, setTab] = useState<"todo" | "done">("todo");
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [understood, setUnderstood] = useState<Record<string, boolean>>({});
+
+  const breakdown = useMemo(() => {
+    const counts = Object.fromEntries(DIFFICULTY_LEVELS.map((l) => [l, 0])) as Record<
+      Level,
+      number
+    >;
+    for (const row of rows) counts[row.level] = (counts[row.level] ?? 0) + 1;
+    return DIFFICULTY_LEVELS.map((level) => ({
+      level,
+      count: counts[level],
+      pct: rows.length ? Math.round((counts[level] / rows.length) * 100) : 0,
+    }));
+  }, [rows]);
 
   const list = PROBLEMS.filter((p) => (tab === "todo" ? !understood[p.id] : understood[p.id]));
   const active = openIndex !== null ? list[openIndex] : undefined;
