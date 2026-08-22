@@ -109,6 +109,35 @@ export function ReviewSection() {
         </button>
       </div>
 
+      <section className="rounded-3xl border border-border bg-card p-5 shadow-[0_20px_60px_-45px_rgba(20,40,90,0.45)]">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h3 className="font-display text-lg font-semibold text-foreground">Question bank</h3>
+          <p className="text-sm text-muted-foreground">
+            <span className="font-semibold text-primary">{rows.length}</span> questions available to
+            review from
+          </p>
+        </div>
+
+        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {breakdown.map(({ level, count, pct }) => (
+            <div key={level} className="rounded-2xl border border-border p-4">
+              <div className="flex items-baseline justify-between">
+                <p className={`text-xs font-bold tracking-[0.12em] uppercase ${LEVEL_META[level].text}`}>
+                  {LEVEL_META[level].label}
+                </p>
+                <p className="font-display text-lg font-semibold text-foreground">{count}</p>
+              </div>
+              <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-muted">
+                <div className={`h-full rounded-full ${LEVEL_META[level].bar}`} style={{ width: `${pct}%` }} />
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">{pct}% of the bank</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+
+
       <section className="overflow-hidden rounded-3xl border border-border bg-card shadow-[0_20px_60px_-45px_rgba(20,40,90,0.45)]">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
