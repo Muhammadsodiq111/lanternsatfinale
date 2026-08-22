@@ -74,6 +74,8 @@ export function TrackerSection() {
   const [openBucket, setOpenBucket] = useState<string | null>(null);
   const [status, setStatus] = useState<Record<string, Status>>({});
   const [starred, setStarred] = useState<Record<string, boolean>>({});
+  const [notes, setNotes] = useState<Record<string, string>>({});
+  const [openNote, setOpenNote] = useState<string | null>(null);
   const [query, setQuery] = useState("");
 
   const domains = useMemo(() => buildDomains(rows), [rows]);
