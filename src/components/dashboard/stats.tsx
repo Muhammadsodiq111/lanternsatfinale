@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { DIFFICULTY_LEVELS, questionBankQuery, type Level } from "@/lib/practice";
 
 type Tf = "week" | "month" | "all";
