@@ -289,6 +289,43 @@ export function TrackerSection() {
                                                  </button>
                                                </td>
                                              </tr>
+                                             {openNote === id ? (
+                                               <tr className="border-t border-border">
+                                                 <td colSpan={4} className="px-1 py-3">
+                                                   <textarea
+                                                     value={notes[id] ?? ""}
+                                                     onChange={(e) =>
+                                                       setNotes((p) => ({
+                                                         ...p,
+                                                         [id]: e.target.value,
+                                                       }))
+                                                     }
+                                                     placeholder="Write a note for this question…"
+                                                     rows={3}
+                                                     className="w-full resize-y rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+                                                   />
+                                                   <div className="mt-2 flex justify-end gap-2">
+                                                     <button
+                                                       type="button"
+                                                       onClick={() =>
+                                                         setNotes((p) => ({ ...p, [id]: "" }))
+                                                       }
+                                                       className="rounded-lg border border-border px-2.5 py-1 text-xs font-bold text-muted-foreground hover:text-foreground"
+                                                     >
+                                                       Clear
+                                                     </button>
+                                                     <button
+                                                       type="button"
+                                                       onClick={() => setOpenNote(null)}
+                                                       className="rounded-lg border border-border px-2.5 py-1 text-xs font-bold text-foreground hover:bg-accent"
+                                                     >
+                                                       Done
+                                                     </button>
+                                                   </div>
+                                                 </td>
+                                               </tr>
+                                             ) : null}
+                                             </Fragment>
                                            );
                                         })}
                                       </tbody>
