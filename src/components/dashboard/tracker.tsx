@@ -268,14 +268,27 @@ export function TrackerSection() {
                                                   )}
                                                 </button>
                                               </td>
-                                              <td className="py-2 text-center">
-                                                <NotebookPen
-                                                  size={16}
-                                                  className="mx-auto text-muted-foreground"
-                                                />
-                                              </td>
-                                            </tr>
-                                          );
+                                               <td className="py-2 text-center">
+                                                 <button
+                                                   type="button"
+                                                   aria-label="Toggle note"
+                                                   aria-expanded={openNote === id}
+                                                   onClick={() =>
+                                                     setOpenNote(openNote === id ? null : id)
+                                                   }
+                                                 >
+                                                   <NotebookPen
+                                                     size={16}
+                                                     className={`mx-auto ${
+                                                       notes[id]?.trim()
+                                                         ? "text-primary"
+                                                         : "text-muted-foreground"
+                                                     }`}
+                                                   />
+                                                 </button>
+                                               </td>
+                                             </tr>
+                                           );
                                         })}
                                       </tbody>
                                     </table>
