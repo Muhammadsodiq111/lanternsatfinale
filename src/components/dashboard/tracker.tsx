@@ -73,37 +73,26 @@ export function TrackerSection() {
   const { data: rows } = useSuspenseQuery(questionBankQuery);
   const [openTopic, setOpenTopic] = useState<string | null>(null);
   const [openBucket, setOpenBucket] = useState<string | null>(null);
-  const [status, setStatus] = usePersistentState<Record<string, Status>>("tracker-status", {});
-  const [starred, setStarred] = usePersistentState<Record<string, boolean>>("tracker-starred", {});
-  const [notes, setNotes] = usePersistentState<Record<string, string>>("tracker-notes", {});
+  const { entries, entry, cycleStatus, toggleStar, setNote, reset } = useTrackerProgress();
   const [openNote, setOpenNote] = useState<string | null>(null);
   const [query, setQuery] = useState("");
 
   const domains = useMemo(() => buildDomains(rows), [rows]);
 
   const totals = useMemo(() => {
-    const values = Object.values(status);
+    const values = Object.values(entries).map((e) => e.status);
     return {
       correct: values.filter((v) => v === "correct").length,
       incorrect: values.filter((v) => v === "incorrect").length,
       attempted: values.filter((v) => v !== "unattempted").length,
     };
-  }, [status]);
+  }, [entries]);
 
   const grandTotal = rows.length;
   const pct = grandTotal ? Math.round((totals.attempted / grandTotal) * 100) : 0;
 
-  function cycle(id: string) {
-    setStatus((prev) => {
-      const current = prev[id] ?? "unattempted";
-      const next: Status =
-        current === "unattempted" ? "correct" : current === "correct" ? "incorrect" : "unattempted";
-      return { ...prev, [id]: next };
-    });
-  }
-
   const attemptedIds = (ids: string[]) =>
-    ids.filter((id) => (status[id] ?? "unattempted") !== "unattempted").length;
+    ids.filter((id) => entry(id).status !== "unattempted").length;
 
   function attemptedIn(topic: Topic) {
     return topic.buckets.reduce((sum, b) => sum + attemptedIds(b.ids), 0);
