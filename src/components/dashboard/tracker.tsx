@@ -109,9 +109,7 @@ export function TrackerSection() {
             <button
               type="button"
               onClick={() => {
-                setStatus({});
-                setStarred({});
-                setNotes({});
+                reset();
                 setOpenNote(null);
               }}
               className="flex items-center gap-1.5 rounded-xl border border-border px-3 py-1.5 text-xs font-bold text-muted-foreground hover:text-foreground"
