@@ -158,6 +158,7 @@ export type Database = {
       user_roles: TableDef<UserRoleRow, "user_id" | "role">;
       lesson_content: TableDef<LessonContentRow, "slug">;
       lesson_progress: TableDef<LessonProgressRow, "slug">;
+      tracker_progress: TableDef<TrackerProgressRow, "question_id">;
     };
     Views: Record<never, never>;
     Functions: {
