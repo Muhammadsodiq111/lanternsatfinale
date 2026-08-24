@@ -9,11 +9,17 @@ export type TrackerEntry = {
   status: TrackerStatus;
   starred: boolean;
   note: string;
+  reviewed: boolean;
 };
 
 export type TrackerMap = Record<string, TrackerEntry>;
 
-export const EMPTY_ENTRY: TrackerEntry = { status: "unattempted", starred: false, note: "" };
+export const EMPTY_ENTRY: TrackerEntry = {
+  status: "unattempted",
+  starred: false,
+  note: "",
+  reviewed: false,
+};
 
 async function currentUserId(): Promise<string | null> {
   const { data } = await supabase.auth.getUser();
@@ -27,7 +33,7 @@ export const trackerProgressQuery = {
     if (!userId) return {};
     const { data, error } = await supabase
       .from("tracker_progress")
-      .select("question_id, status, starred, note")
+      .select("question_id, status, starred, note, reviewed")
       .eq("user_id", userId);
     if (error) throw error;
 
@@ -40,6 +46,7 @@ export const trackerProgressQuery = {
             : "unattempted",
         starred: Boolean(row.starred),
         note: row.note ?? "",
+        reviewed: Boolean(row.reviewed),
       };
     }
     return map;
@@ -57,6 +64,7 @@ async function saveEntry(questionId: string, entry: TrackerEntry): Promise<void>
       status: entry.status,
       starred: entry.starred,
       note: entry.note,
+      reviewed: entry.reviewed,
     },
     { onConflict: "user_id,question_id" },
   );
@@ -132,6 +140,11 @@ export function useTrackerProgress() {
 
   const setNote = useCallback((id: string, note: string) => apply(id, { note }, true), [apply]);
 
+  const toggleReviewed = useCallback(
+    (id: string) => apply(id, { reviewed: !(local[id]?.reviewed ?? false) }),
+    [apply, local],
+  );
+
   const reset = useCallback(() => {
     Object.values(timers.current).forEach(clearTimeout);
     timers.current = {};
@@ -139,5 +152,15 @@ export function useTrackerProgress() {
     void clearAll().catch(() => undefined);
   }, []);
 
-  return { entries: local, entry, cycleStatus, toggleStar, setNote, reset, isLoading, error };
+  return {
+    entries: local,
+    entry,
+    cycleStatus,
+    toggleStar,
+    setNote,
+    toggleReviewed,
+    reset,
+    isLoading,
+    error,
+  };
 }

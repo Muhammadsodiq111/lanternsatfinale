@@ -134,6 +134,7 @@ type TrackerProgressRow = Timestamps & {
   status: string;
   starred: boolean;
   note: string;
+  reviewed: boolean;
 };
 
 type UserRoleRow = {
