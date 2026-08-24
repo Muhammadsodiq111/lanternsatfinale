@@ -1,19 +1,23 @@
 import { useMemo, useState } from "react";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Check, ChevronLeft, ChevronRight, SlidersHorizontal, X } from "lucide-react";
 
-import { DIFFICULTY_LEVELS, questionBankQuery, type Level } from "@/lib/practice";
+import {
+  DIFFICULTY_LEVELS,
+  questionBankQuery,
+  reviewQuestionsQuery,
+  type Level,
+} from "@/lib/practice";
+import { useTrackerProgress } from "@/lib/tracker-progress";
 
 type Problem = {
   id: string;
   prompt: string;
   module: string;
-  difficulty: "Easy" | "Medium" | "Hard";
-  date: string;
+  difficulty: Level;
   source: string;
   choices: string[];
   answer: number;
-  picked: number;
   explanation: string;
 };
 
@@ -24,14 +28,11 @@ const LEVEL_META: Record<Level, { label: string; bar: string; text: string }> = 
   challenge: { label: "Challenge", bar: "bg-violet", text: "text-violet" },
 };
 
-const PROBLEMS: Problem[] = [];
-
 export function ReviewSection() {
   const { data: rows } = useSuspenseQuery(questionBankQuery);
   const [tab, setTab] = useState<"todo" | "done">("todo");
   const [openIndex, setOpenIndex] = useState<number | null>(null);
-  const [notes, setNotes] = useState<Record<string, string>>({});
-  const [understood, setUnderstood] = useState<Record<string, boolean>>({});
+  const { entries, entry, setNote, toggleReviewed } = useTrackerProgress();
 
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [subject, setSubject] = useState<"all" | "math" | "english">("all");
@@ -74,7 +75,39 @@ export function ReviewSection() {
     }));
   }, [filtered]);
 
-  const list = PROBLEMS.filter((p) => (tab === "todo" ? !understood[p.id] : understood[p.id]));
+  const flaggedIds = useMemo(
+    () =>
+      Object.entries(entries)
+        .filter(([, e]) => e.status === "incorrect" || e.starred)
+        .map(([id]) => id),
+    [entries],
+  );
+
+  const { data: reviewRows = [] } = useQuery(reviewQuestionsQuery(flaggedIds));
+
+  const problems = useMemo<Problem[]>(
+    () =>
+      reviewRows
+        .filter((row) => {
+          if (subject !== "all" && row.subject !== subject) return false;
+          if (module !== "all" && row.module !== module) return false;
+          if (levels.length && !levels.includes(row.level)) return false;
+          return true;
+        })
+        .map((row) => ({
+          id: row.id,
+          prompt: row.prompt,
+          module: row.module,
+          difficulty: row.level,
+          source: row.subject === "english" ? "Reading & Writing" : "Math",
+          choices: row.choices,
+          answer: row.answer,
+          explanation: row.explanation.join("\n\n"),
+        })),
+    [reviewRows, subject, module, levels],
+  );
+
+  const list = problems.filter((p) => (tab === "todo" ? !entry(p.id).reviewed : entry(p.id).reviewed));
   const active = openIndex !== null ? list[openIndex] : undefined;
 
   if (active) {
@@ -82,10 +115,10 @@ export function ReviewSection() {
       <ProblemView
         problem={active}
         position={`${openIndex! + 1} / ${list.length}`}
-        note={notes[active.id] ?? ""}
-        understood={!!understood[active.id]}
-        onNote={(v) => setNotes((p) => ({ ...p, [active.id]: v }))}
-        onUnderstood={() => setUnderstood((p) => ({ ...p, [active.id]: !p[active.id] }))}
+        note={entry(active.id).note}
+        understood={entry(active.id).reviewed}
+        onNote={(v) => setNote(active.id, v)}
+        onUnderstood={() => toggleReviewed(active.id)}
         onExit={() => setOpenIndex(null)}
         onPrev={() => setOpenIndex((i) => Math.max(0, (i ?? 0) - 1))}
         onNext={() => setOpenIndex((i) => Math.min(list.length - 1, (i ?? 0) + 1))}
@@ -103,8 +136,8 @@ export function ReviewSection() {
               { key: "done", label: "Reviewed" },
             ] as const
           ).map((t) => {
-            const count = PROBLEMS.filter((p) =>
-              t.key === "todo" ? !understood[p.id] : understood[p.id],
+            const count = problems.filter((p) =>
+              t.key === "todo" ? !entry(p.id).reviewed : entry(p.id).reviewed,
             ).length;
             return (
               <button
@@ -280,7 +313,6 @@ export function ReviewSection() {
                 <th className="px-5 py-3 text-left font-bold">Problem</th>
                 <th className="px-4 py-3 text-left font-bold">Module</th>
                 <th className="px-4 py-3 text-left font-bold">Difficulty</th>
-                <th className="px-4 py-3 text-left font-bold">Date</th>
                 <th className="px-4 py-3 text-left font-bold">Source</th>
               </tr>
             </thead>
@@ -296,7 +328,6 @@ export function ReviewSection() {
                   <td className="px-4 py-3.5">
                     <DifficultyTag value={p.difficulty} />
                   </td>
-                  <td className="px-4 py-3.5 text-muted-foreground">{p.date}</td>
                   <td className="px-4 py-3.5 text-muted-foreground">{p.source}</td>
                 </tr>
               ))}
@@ -307,7 +338,7 @@ export function ReviewSection() {
         {list.length === 0 ? (
           <p className="px-5 py-20 text-center text-sm text-muted-foreground">
             {tab === "todo"
-              ? "Nothing to review yet — missed questions from practice and mocks land here."
+              ? "Nothing to review yet — star a question or mark it incorrect in the tracker and it lands here."
               : "No reviewed problems yet."}
           </p>
         ) : null}
@@ -317,9 +348,8 @@ export function ReviewSection() {
 }
 
 function DifficultyTag({ value }: { value: Problem["difficulty"] }) {
-  const tone =
-    value === "Easy" ? "text-emerald" : value === "Medium" ? "text-amber" : "text-flame";
-  return <span className={`text-xs font-bold ${tone}`}>{value}</span>;
+  const meta = LEVEL_META[value];
+  return <span className={`text-xs font-bold ${meta.text}`}>{meta.label}</span>;
 }
 
 function ProblemView({
