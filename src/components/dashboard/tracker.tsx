@@ -214,7 +214,8 @@ export function TrackerSection() {
                                           const shortId = id.slice(0, 7);
                                           if (query && !shortId.includes(query.toLowerCase()))
                                             return null;
-                                          const st = status[id] ?? "unattempted";
+                                          const item = entry(id);
+                                          const st = item.status;
                                            return (
                                              <Fragment key={id}>
                                              <tr className="border-t border-border">
