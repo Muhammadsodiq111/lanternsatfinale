@@ -127,6 +127,15 @@ type LessonProgressRow = Timestamps & {
   completed: boolean;
 };
 
+type TrackerProgressRow = Timestamps & {
+  id: string;
+  user_id: string;
+  question_id: string;
+  status: string;
+  starred: boolean;
+  note: string;
+};
+
 type UserRoleRow = {
   id: string;
   user_id: string;
