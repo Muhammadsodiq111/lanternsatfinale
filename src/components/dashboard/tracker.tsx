@@ -226,14 +226,12 @@ export function TrackerSection() {
                                                 <button
                                                   type="button"
                                                   aria-label="Star question"
-                                                  onClick={() =>
-                                                    setStarred((p) => ({ ...p, [id]: !p[id] }))
-                                                  }
+                                                  onClick={() => toggleStar(id)}
                                                 >
                                                   <Star
                                                     size={16}
                                                     className={
-                                                      starred[id]
+                                                      item.starred
                                                         ? "fill-amber text-amber"
                                                         : "text-muted-foreground"
                                                     }
@@ -244,7 +242,7 @@ export function TrackerSection() {
                                                 <button
                                                   type="button"
                                                   aria-label="Toggle status"
-                                                  onClick={() => cycle(id)}
+                                                  onClick={() => cycleStatus(id)}
                                                   className={`grid size-6 place-items-center rounded-md border ${
                                                     st === "correct"
                                                       ? "border-emerald text-emerald"
@@ -272,7 +270,7 @@ export function TrackerSection() {
                                                    <NotebookPen
                                                      size={16}
                                                      className={`mx-auto ${
-                                                       notes[id]?.trim()
+                                                       item.note.trim()
                                                          ? "text-primary"
                                                          : "text-muted-foreground"
                                                      }`}
@@ -284,13 +282,8 @@ export function TrackerSection() {
                                                <tr className="border-t border-border">
                                                  <td colSpan={4} className="px-1 py-3">
                                                    <textarea
-                                                     value={notes[id] ?? ""}
-                                                     onChange={(e) =>
-                                                       setNotes((p) => ({
-                                                         ...p,
-                                                         [id]: e.target.value,
-                                                       }))
-                                                     }
+                                                     value={item.note}
+                                                     onChange={(e) => setNote(id, e.target.value)}
                                                      placeholder="Write a note for this question…"
                                                      rows={3}
                                                      className="w-full resize-y rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
@@ -298,9 +291,7 @@ export function TrackerSection() {
                                                    <div className="mt-2 flex justify-end gap-2">
                                                      <button
                                                        type="button"
-                                                       onClick={() =>
-                                                         setNotes((p) => ({ ...p, [id]: "" }))
-                                                       }
+                                                       onClick={() => setNote(id, "")}
                                                        className="rounded-lg border border-border px-2.5 py-1 text-xs font-bold text-muted-foreground hover:text-foreground"
                                                      >
                                                        Clear
