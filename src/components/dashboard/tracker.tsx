@@ -3,7 +3,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { Check, ExternalLink, NotebookPen, RotateCcw, Star, X } from "lucide-react";
 import { DIFFICULTY_LEVELS, questionBankQuery, type BankRow, type Level } from "@/lib/practice";
 import { MODULE_CATALOG } from "@/lib/module-catalog";
-import { usePersistentState } from "@/lib/local-store";
+import { useTrackerProgress } from "@/lib/tracker-progress";
 
 type Bucket = { label: string; level: Level; ids: string[] };
 type Topic = { title: string; total: number; buckets: Bucket[] };
