@@ -120,6 +120,43 @@ export const questionBankQuery = {
 
 
 
+export type ReviewQuestion = {
+  id: string;
+  subject: string;
+  module: string;
+  level: Level;
+  prompt: string;
+  choices: string[];
+  answer: number;
+  explanation: string[];
+};
+
+/** Full detail for a specific set of question ids (used by the Review board). */
+export const reviewQuestionsQuery = (ids: string[]) => ({
+  queryKey: ["review-questions", [...ids].sort().join(",")],
+  queryFn: async (): Promise<ReviewQuestion[]> => {
+    if (!ids.length) return [];
+    const { data, error } = await supabase
+      .from("practice_questions")
+      .select("id, subject, module, level, prompt, choices, answer, explanation")
+      .in("id", ids);
+    if (error) throw error;
+    return (data ?? []).map((row) => ({
+      id: row.id,
+      subject: row.subject === "english" ? "english" : "math",
+      module: row.module ?? "",
+      level: (DIFFICULTY_LEVELS as readonly string[]).includes(row.level)
+        ? (row.level as Level)
+        : "medium",
+      prompt: row.prompt,
+      choices: toStringArray(row.choices),
+      answer: row.answer ?? 0,
+      explanation: toStringArray(row.explanation),
+    }));
+  },
+  staleTime: 30_000,
+});
+
 export function subtopicsFromRows(rows: PracticeQuestionRow[]): Subtopic[] {
   const groups = new Map<string, PracticeQuestionRow[]>();
   for (const row of rows) {

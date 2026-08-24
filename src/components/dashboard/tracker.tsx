@@ -3,7 +3,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { Check, ExternalLink, NotebookPen, RotateCcw, Star, X } from "lucide-react";
 import { DIFFICULTY_LEVELS, questionBankQuery, type BankRow, type Level } from "@/lib/practice";
 import { MODULE_CATALOG } from "@/lib/module-catalog";
-import { usePersistentState } from "@/lib/local-store";
+import { useTrackerProgress } from "@/lib/tracker-progress";
 
 type Bucket = { label: string; level: Level; ids: string[] };
 type Topic = { title: string; total: number; buckets: Bucket[] };
@@ -73,37 +73,26 @@ export function TrackerSection() {
   const { data: rows } = useSuspenseQuery(questionBankQuery);
   const [openTopic, setOpenTopic] = useState<string | null>(null);
   const [openBucket, setOpenBucket] = useState<string | null>(null);
-  const [status, setStatus] = usePersistentState<Record<string, Status>>("tracker-status", {});
-  const [starred, setStarred] = usePersistentState<Record<string, boolean>>("tracker-starred", {});
-  const [notes, setNotes] = usePersistentState<Record<string, string>>("tracker-notes", {});
+  const { entries, entry, cycleStatus, toggleStar, setNote, reset } = useTrackerProgress();
   const [openNote, setOpenNote] = useState<string | null>(null);
   const [query, setQuery] = useState("");
 
   const domains = useMemo(() => buildDomains(rows), [rows]);
 
   const totals = useMemo(() => {
-    const values = Object.values(status);
+    const values = Object.values(entries).map((e) => e.status);
     return {
       correct: values.filter((v) => v === "correct").length,
       incorrect: values.filter((v) => v === "incorrect").length,
       attempted: values.filter((v) => v !== "unattempted").length,
     };
-  }, [status]);
+  }, [entries]);
 
   const grandTotal = rows.length;
   const pct = grandTotal ? Math.round((totals.attempted / grandTotal) * 100) : 0;
 
-  function cycle(id: string) {
-    setStatus((prev) => {
-      const current = prev[id] ?? "unattempted";
-      const next: Status =
-        current === "unattempted" ? "correct" : current === "correct" ? "incorrect" : "unattempted";
-      return { ...prev, [id]: next };
-    });
-  }
-
   const attemptedIds = (ids: string[]) =>
-    ids.filter((id) => (status[id] ?? "unattempted") !== "unattempted").length;
+    ids.filter((id) => entry(id).status !== "unattempted").length;
 
   function attemptedIn(topic: Topic) {
     return topic.buckets.reduce((sum, b) => sum + attemptedIds(b.ids), 0);
@@ -120,9 +109,7 @@ export function TrackerSection() {
             <button
               type="button"
               onClick={() => {
-                setStatus({});
-                setStarred({});
-                setNotes({});
+                reset();
                 setOpenNote(null);
               }}
               className="flex items-center gap-1.5 rounded-xl border border-border px-3 py-1.5 text-xs font-bold text-muted-foreground hover:text-foreground"
@@ -227,7 +214,8 @@ export function TrackerSection() {
                                           const shortId = id.slice(0, 7);
                                           if (query && !shortId.includes(query.toLowerCase()))
                                             return null;
-                                          const st = status[id] ?? "unattempted";
+                                          const item = entry(id);
+                                          const st = item.status;
                                            return (
                                              <Fragment key={id}>
                                              <tr className="border-t border-border">
@@ -238,14 +226,12 @@ export function TrackerSection() {
                                                 <button
                                                   type="button"
                                                   aria-label="Star question"
-                                                  onClick={() =>
-                                                    setStarred((p) => ({ ...p, [id]: !p[id] }))
-                                                  }
+                                                  onClick={() => toggleStar(id)}
                                                 >
                                                   <Star
                                                     size={16}
                                                     className={
-                                                      starred[id]
+                                                      item.starred
                                                         ? "fill-amber text-amber"
                                                         : "text-muted-foreground"
                                                     }
@@ -256,7 +242,7 @@ export function TrackerSection() {
                                                 <button
                                                   type="button"
                                                   aria-label="Toggle status"
-                                                  onClick={() => cycle(id)}
+                                                  onClick={() => cycleStatus(id)}
                                                   className={`grid size-6 place-items-center rounded-md border ${
                                                     st === "correct"
                                                       ? "border-emerald text-emerald"
@@ -284,7 +270,7 @@ export function TrackerSection() {
                                                    <NotebookPen
                                                      size={16}
                                                      className={`mx-auto ${
-                                                       notes[id]?.trim()
+                                                       item.note.trim()
                                                          ? "text-primary"
                                                          : "text-muted-foreground"
                                                      }`}
@@ -296,13 +282,8 @@ export function TrackerSection() {
                                                <tr className="border-t border-border">
                                                  <td colSpan={4} className="px-1 py-3">
                                                    <textarea
-                                                     value={notes[id] ?? ""}
-                                                     onChange={(e) =>
-                                                       setNotes((p) => ({
-                                                         ...p,
-                                                         [id]: e.target.value,
-                                                       }))
-                                                     }
+                                                     value={item.note}
+                                                     onChange={(e) => setNote(id, e.target.value)}
                                                      placeholder="Write a note for this question…"
                                                      rows={3}
                                                      className="w-full resize-y rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
@@ -310,9 +291,7 @@ export function TrackerSection() {
                                                    <div className="mt-2 flex justify-end gap-2">
                                                      <button
                                                        type="button"
-                                                       onClick={() =>
-                                                         setNotes((p) => ({ ...p, [id]: "" }))
-                                                       }
+                                                       onClick={() => setNote(id, "")}
                                                        className="rounded-lg border border-border px-2.5 py-1 text-xs font-bold text-muted-foreground hover:text-foreground"
                                                      >
                                                        Clear
