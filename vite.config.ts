@@ -6,10 +6,17 @@
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
+// `STATIC_EXPORT=true bun run build` produces a fully static SPA bundle
+// (dist/client/index.html + assets) that can be uploaded to any plain
+// web host such as cPanel. The normal build is untouched.
+const staticExport = process.env["STATIC_EXPORT"] === "true";
+
 export default defineConfig({
-  tanstackStart: {
-    // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
-    // nitro/vite builds from this
-    server: { entry: "server" },
-  },
+  tanstackStart: staticExport
+    ? { spa: { enabled: true }, prerender: { enabled: true } }
+    : {
+        // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
+        // nitro/vite builds from this
+        server: { entry: "server" },
+      },
 });
