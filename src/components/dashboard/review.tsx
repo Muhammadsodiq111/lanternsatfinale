@@ -402,7 +402,7 @@ function ProblemView({
           <ul className="space-y-3">
             {problem.choices.map((choice, i) => {
               const isAnswer = i === problem.answer;
-              const isPicked = i === problem.picked;
+              const isPicked = false;
               return (
                 <li
                   key={choice}
