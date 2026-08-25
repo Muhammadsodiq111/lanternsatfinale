@@ -12,15 +12,11 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 const staticExport = process.env["STATIC_EXPORT"] === "true";
 
 export default defineConfig({
-  tanstackStart: {
-    // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
-    // nitro/vite builds from this
-    server: { entry: "server" },
-    ...(staticExport
-      ? {
-          spa: { enabled: true },
-          prerender: { enabled: true },
-        }
-      : {}),
-  },
+  tanstackStart: staticExport
+    ? { spa: { enabled: true }, prerender: { enabled: true } }
+    : {
+        // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
+        // nitro/vite builds from this
+        server: { entry: "server" },
+      },
 });
