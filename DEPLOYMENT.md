@@ -37,6 +37,7 @@ create policy "Admins manage lesson content"
   using (public.has_role(auth.uid(), 'admin'))
   with check (public.has_role(auth.uid(), 'admin'));
 
+drop trigger if exists lesson_content_updated_at on public.lesson_content;
 create trigger lesson_content_updated_at
   before update on public.lesson_content
   for each row execute function public.set_updated_at();
@@ -63,6 +64,7 @@ create policy "Users manage their own lesson progress"
   using (user_id = auth.uid())
   with check (user_id = auth.uid());
 
+drop trigger if exists lesson_progress_updated_at on public.lesson_progress;
 create trigger lesson_progress_updated_at
   before update on public.lesson_progress
   for each row execute function public.set_updated_at();
@@ -70,7 +72,9 @@ create trigger lesson_progress_updated_at
 create index if not exists lesson_progress_user_idx on public.lesson_progress (user_id);
 ```
 
-If `create trigger` errors with "already exists", that part is already done — ignore it.
+This SQL is safe to run more than once. PostgreSQL does not support
+`create trigger if not exists`, so each trigger is dropped with
+`drop trigger if exists` and then recreated.
 
 Make yourself an admin (needed for the manage pages):
 
