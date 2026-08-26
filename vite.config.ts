@@ -12,8 +12,11 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 const staticExport = process.env["STATIC_EXPORT"] === "true";
 
 export default defineConfig({
+  // Static export skips the nitro deploy plugin so TanStack Start emits its own
+  // server bundle and can prerender the SPA shell (dist/client/index.html).
+  ...(staticExport ? { nitro: false as const } : {}),
   tanstackStart: staticExport
-    ? { spa: { enabled: true }, prerender: { enabled: true } }
+    ? { spa: { enabled: true } }
     : {
         // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
         // nitro/vite builds from this
