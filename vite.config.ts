@@ -13,7 +13,11 @@ const staticExport = process.env["STATIC_EXPORT"] === "true";
 
 export default defineConfig({
   tanstackStart: staticExport
-    ? { spa: { enabled: true }, prerender: { enabled: true } }
+    ? {
+        spa: { enabled: true },
+        // Redirect TanStack Start's bundled server entry to src/server.ts.
+        server: { entry: "server" },
+      }
     : {
         // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
         // nitro/vite builds from this
