@@ -123,6 +123,11 @@ export function useTrackerProgress() {
     [],
   );
 
+  const setStatus = useCallback(
+    (id: string, status: TrackerStatus) => apply(id, { status }),
+    [apply],
+  );
+
   const cycleStatus = useCallback(
     (id: string) => {
       const current = local[id]?.status ?? "unattempted";
@@ -132,6 +137,7 @@ export function useTrackerProgress() {
     },
     [apply, local],
   );
+
 
   const toggleStar = useCallback(
     (id: string) => apply(id, { starred: !(local[id]?.starred ?? false) }),
