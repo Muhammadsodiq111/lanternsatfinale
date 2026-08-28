@@ -161,6 +161,7 @@ export function useTrackerProgress() {
   return {
     entries: local,
     entry,
+    setStatus,
     cycleStatus,
     toggleStar,
     setNote,
@@ -170,3 +171,4 @@ export function useTrackerProgress() {
     error,
   };
 }
+
