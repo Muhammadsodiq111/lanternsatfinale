@@ -89,8 +89,8 @@ function PracticePage() {
     setCurrent({ subtopic: first?.id ?? "", questionId: first?.questions[0]?.id ?? "" });
     setSelected(null);
     setChecked(false);
-    setUnderstood(false);
     setShowDesmos(false);
+
   }, [subtopics, current.subtopic, current.questionId]);
 
   const subtopic = subtopics.find((s) => s.id === current.subtopic) ?? subtopics[0];
