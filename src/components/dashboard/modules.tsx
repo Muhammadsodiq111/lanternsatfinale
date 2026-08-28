@@ -4,9 +4,16 @@ import { Link } from "@tanstack/react-router";
 import { ChevronDown } from "lucide-react";
 
 import { practiceQuestionsQuery } from "@/lib/practice";
+import { useTrackerProgress, type TrackerMap } from "@/lib/tracker-progress";
 
 type Module = { title: string; questions: number; subtopics: number; minutes: number };
-type ModuleStats = { questions: number; subtopics: string[] };
+type ModuleStats = {
+  questions: number;
+  subtopics: string[];
+  attempted: number;
+  correct: number;
+};
+
 type Group = { title: string; modules: Module[] };
 
 const MATH_GROUPS: Group[] = [
