@@ -197,6 +197,16 @@ function ModuleCard({
   const [open, setOpen] = useState(false);
   const subtopics = stats.subtopics;
   const count = stats.questions;
+  const accuracy = stats.attempted ? Math.round((stats.correct / stats.attempted) * 100) : null;
+  const filledSegments = count ? Math.round((stats.attempted / count) * 12) : 0;
+  const accuracyClass =
+    accuracy === null
+      ? "text-muted-foreground"
+      : accuracy >= 80
+        ? "text-emerald"
+        : accuracy >= 50
+          ? "text-amber"
+          : "text-flame";
 
   return (
     <article className="flex flex-col rounded-3xl border border-border bg-card p-5 shadow-[0_20px_60px_-45px_rgba(20,40,90,0.45)]">
@@ -210,17 +220,21 @@ function ModuleCard({
 
         <div className="mt-5 flex items-center justify-between text-[11px] font-bold tracking-[0.12em] text-muted-foreground uppercase">
           <span>
-            Accuracy <span className="ml-1 text-sm text-muted-foreground">—</span>
+            Accuracy <span className={`ml-1 text-sm ${accuracyClass}`}>{accuracy === null ? "—" : `${accuracy}%`}</span>
           </span>
           <span>
-            Completed <span className="ml-1 text-sm text-foreground">0</span>/{count}
+            Completed <span className="ml-1 text-sm text-foreground">{stats.attempted}</span>/{count}
           </span>
         </div>
         <div className="mt-2 flex gap-1.5">
           {Array.from({ length: 12 }).map((_, i) => (
-            <span key={i} className="h-1.5 flex-1 rounded-full bg-muted" />
+            <span
+              key={i}
+              className={`h-1.5 flex-1 rounded-full ${i < filledSegments ? "bg-emerald" : "bg-muted"}`}
+            />
           ))}
         </div>
+
       </div>
 
       <div className="mt-5 flex items-center gap-2 pt-0">
