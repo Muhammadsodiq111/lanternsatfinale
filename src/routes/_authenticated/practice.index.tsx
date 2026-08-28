@@ -136,6 +136,10 @@ function PracticePage() {
     const all = subtopics.flatMap((s) => s.questions.map((q) => ({ s: s.id, q: q.id })));
     if (all.length === 0 || !question) return;
     const i = all.findIndex((x) => x.q === question.id);
+    if (mode === "diagnostic" && i === all.length - 1) {
+      setShowSummary(true);
+      return;
+    }
     const nxt = all[(i + 1) % all.length]!;
     setOpenSubtopic(nxt.s);
     goTo(nxt.s, nxt.q);
@@ -145,8 +149,14 @@ function PracticePage() {
     setWidgets((w) => (w.includes(id) ? w.filter((x) => x !== id) : [...w, id]));
   }
 
+  const diagQuestions = subtopics.flatMap((s) => s.questions);
+  const diagAnswered = diagQuestions.filter((q) => results[q.id]).length;
+  const diagCorrect = diagQuestions.filter((q) => results[q.id] === "correct").length;
+  const diagAccuracy = diagAnswered ? Math.round((diagCorrect / diagAnswered) * 100) : 0;
+
   const completedPts = Object.values(results).filter((r) => r === "correct").length * 8;
   const answeredInSubtopic = (subtopic?.questions ?? []).filter((q) => results[q.id]).length;
+
 
   return (
     <div className="flex min-h-screen flex-col bg-sky">
