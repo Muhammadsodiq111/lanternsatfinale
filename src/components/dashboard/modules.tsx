@@ -153,14 +153,17 @@ export function ModulesSection() {
 
 
       {groups.map((group) => {
-        const total = group.modules.reduce((sum, m) => sum + (stats.get(m.title)?.questions ?? 0), 0);
+        const list = group.modules.map((m) => stats.get(m.title) ?? emptyStats);
+        const total = list.reduce((sum, s) => sum + s.questions, 0);
+        const attempted = list.reduce((sum, s) => sum + s.attempted, 0);
+        const correct = list.reduce((sum, s) => sum + s.correct, 0);
         return (
           <section key={group.title} className="space-y-4">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <h3 className="font-display text-lg font-semibold text-foreground">{group.title}</h3>
               <p className="text-xs font-semibold text-muted-foreground">
-                <span className="text-foreground">0</span>/{total} attempted
-                <span className="ml-4 text-foreground">0</span>/{total} correct
+                <span className="text-foreground">{attempted}</span>/{total} attempted
+                <span className="ml-4 text-foreground">{correct}</span>/{total} correct
               </p>
             </div>
 
@@ -170,13 +173,14 @@ export function ModulesSection() {
                   key={m.title}
                   module={m}
                   accent={accent}
-                  stats={stats.get(m.title) ?? { questions: 0, subtopics: [] }}
+                  stats={stats.get(m.title) ?? emptyStats}
                 />
               ))}
             </div>
           </section>
         );
       })}
+
     </div>
   );
 }
