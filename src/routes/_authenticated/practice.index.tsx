@@ -380,10 +380,11 @@ function PracticePage() {
                   <label className="mt-auto flex items-center gap-2 border-t border-border pt-4 text-sm font-semibold text-foreground">
                     <input
                       type="checkbox"
-                      checked={understood}
-                      onChange={(e) => setUnderstood(e.target.checked)}
+                      checked={entry(question.id).reviewed}
+                      onChange={() => toggleReviewed(question.id)}
                       className="h-4 w-4 accent-emerald"
                     />
+
                     I understand this problem
                   </label>
                 </div>
