@@ -107,8 +107,12 @@ function PracticePage() {
     setSelected(null);
     setTyped("");
     setChecked(false);
-    setUnderstood(false);
     setShowDesmos(false);
+  }
+
+  function record(id: string, status: Status) {
+    setResults((r) => ({ ...r, [id]: status }));
+    setStatus(id, status === "correct" ? "correct" : "incorrect");
   }
 
   function check() {
@@ -116,16 +120,14 @@ function PracticePage() {
     if (question.type === "free") {
       if (!typed.trim()) return;
       setChecked(true);
-      setResults((r) => ({
-        ...r,
-        [question.id]: matchesFreeAnswer(typed, question.answerText) ? "correct" : "wrong",
-      }));
+      record(question.id, matchesFreeAnswer(typed, question.answerText) ? "correct" : "wrong");
       return;
     }
     if (selected === null) return;
     setChecked(true);
-    setResults((r) => ({ ...r, [question.id]: selected === question.answer ? "correct" : "wrong" }));
+    record(question.id, selected === question.answer ? "correct" : "wrong");
   }
+
 
 
   function next() {
