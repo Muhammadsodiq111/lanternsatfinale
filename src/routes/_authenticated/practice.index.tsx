@@ -181,11 +181,17 @@ function PracticePage() {
         </span>
 
         <div className="mx-auto flex min-w-0 items-center gap-3">
+          {mode === "diagnostic" ? (
+            <span className="shrink-0 rounded-lg bg-primary px-3 py-1 text-xs font-bold text-primary-foreground">
+              Diagnostic {Math.min(diagAnswered + 1, diagQuestions.length)}/{diagQuestions.length}
+            </span>
+          ) : null}
           <h1 className="font-display truncate text-base font-semibold text-foreground">{moduleTitle}</h1>
           <span className="hidden truncate rounded-lg bg-accent px-3 py-1 text-xs font-semibold text-primary sm:block">
             {subtopic?.title ?? ""}
           </span>
         </div>
+
 
         <div className="flex items-center gap-2">
           {(
