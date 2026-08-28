@@ -17,6 +17,8 @@ import {
   subtopicsFromRows,
   type Level,
 } from "@/lib/practice";
+import { useTrackerProgress } from "@/lib/tracker-progress";
+
 
 type Search = { module: string; mode: "practice" | "diagnostic" };
 
