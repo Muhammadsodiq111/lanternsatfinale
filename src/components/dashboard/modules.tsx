@@ -99,17 +99,27 @@ export function ModulesSection() {
   const accent = subject === "math" ? "bg-primary text-primary-foreground" : "bg-violet text-primary-foreground";
 
   const { data: rows = [] } = useQuery(practiceQuestionsQuery(""));
+  const { entries } = useTrackerProgress();
+
   const stats = useMemo(() => {
+    const tracker: TrackerMap = entries;
     const map = new Map<string, ModuleStats>();
     for (const row of rows) {
-      const entry = map.get(row.module) ?? { questions: 0, subtopics: [] };
+      const entry =
+        map.get(row.module) ?? { questions: 0, subtopics: [] as string[], attempted: 0, correct: 0 };
       entry.questions += 1;
       const name = row.subtopic || "Questions";
       if (!entry.subtopics.includes(name)) entry.subtopics.push(name);
+      const status = tracker[row.id]?.status;
+      if (status === "correct" || status === "incorrect") entry.attempted += 1;
+      if (status === "correct") entry.correct += 1;
       map.set(row.module, entry);
     }
     return map;
-  }, [rows]);
+  }, [rows, entries]);
+
+  const emptyStats: ModuleStats = { questions: 0, subtopics: [], attempted: 0, correct: 0 };
+
 
   return (
     <div className="space-y-10">
