@@ -45,14 +45,26 @@ export const Route = createFileRoute("/_authenticated/practice/")({
 type Status = "correct" | "wrong";
 
 function PracticePage() {
-  const { module: moduleTitle } = Route.useSearch();
+  const { module: moduleTitle, mode } = Route.useSearch();
   const navigate = useNavigate();
+  const { entry, setStatus, toggleReviewed } = useTrackerProgress();
 
   const { data: rows = [] } = useQuery(practiceQuestionsQuery(moduleTitle));
-  const subtopics = useMemo(
+  const allSubtopics = useMemo(
     () => subtopicsFromRows(rows).filter((s) => s.questions.length > 0),
     [rows],
   );
+
+  // Diagnostic mode: a short mixed set (up to 2 per difficulty) drawn from the module.
+  const subtopics = useMemo(() => {
+    if (mode !== "diagnostic") return allSubtopics;
+    const pool = allSubtopics.flatMap((s) => s.questions);
+    const picked = DIFFICULTY_LEVELS.flatMap((level) =>
+      pool.filter((q) => q.level === level).slice(0, 2),
+    );
+    if (picked.length === 0) return [];
+    return [{ id: "diagnostic", title: "Diagnostic set", questions: picked }];
+  }, [allSubtopics, mode]);
 
   const [openSubtopic, setOpenSubtopic] = useState("");
   const [current, setCurrent] = useState({ subtopic: "", questionId: "" });
@@ -60,11 +72,12 @@ function PracticePage() {
   const [selected, setSelected] = useState<number | null>(null);
   const [typed, setTyped] = useState("");
   const [checked, setChecked] = useState(false);
-  const [understood, setUnderstood] = useState(false);
   const [showDesmos, setShowDesmos] = useState(false);
   const [hideTimer, setHideTimer] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [widgets, setWidgets] = useState<WidgetId[]>([]);
+  const [showSummary, setShowSummary] = useState(false);
+
 
   useEffect(() => {
     const exists = subtopics.some(
