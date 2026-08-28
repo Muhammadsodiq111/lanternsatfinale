@@ -4,9 +4,16 @@ import { Link } from "@tanstack/react-router";
 import { ChevronDown } from "lucide-react";
 
 import { practiceQuestionsQuery } from "@/lib/practice";
+import { useTrackerProgress, type TrackerMap } from "@/lib/tracker-progress";
 
 type Module = { title: string; questions: number; subtopics: number; minutes: number };
-type ModuleStats = { questions: number; subtopics: string[] };
+type ModuleStats = {
+  questions: number;
+  subtopics: string[];
+  attempted: number;
+  correct: number;
+};
+
 type Group = { title: string; modules: Module[] };
 
 const MATH_GROUPS: Group[] = [
@@ -92,17 +99,27 @@ export function ModulesSection() {
   const accent = subject === "math" ? "bg-primary text-primary-foreground" : "bg-violet text-primary-foreground";
 
   const { data: rows = [] } = useQuery(practiceQuestionsQuery(""));
+  const { entries } = useTrackerProgress();
+
   const stats = useMemo(() => {
+    const tracker: TrackerMap = entries;
     const map = new Map<string, ModuleStats>();
     for (const row of rows) {
-      const entry = map.get(row.module) ?? { questions: 0, subtopics: [] };
+      const entry =
+        map.get(row.module) ?? { questions: 0, subtopics: [] as string[], attempted: 0, correct: 0 };
       entry.questions += 1;
       const name = row.subtopic || "Questions";
       if (!entry.subtopics.includes(name)) entry.subtopics.push(name);
+      const status = tracker[row.id]?.status;
+      if (status === "correct" || status === "incorrect") entry.attempted += 1;
+      if (status === "correct") entry.correct += 1;
       map.set(row.module, entry);
     }
     return map;
-  }, [rows]);
+  }, [rows, entries]);
+
+  const emptyStats: ModuleStats = { questions: 0, subtopics: [], attempted: 0, correct: 0 };
+
 
   return (
     <div className="space-y-10">
@@ -136,14 +153,17 @@ export function ModulesSection() {
 
 
       {groups.map((group) => {
-        const total = group.modules.reduce((sum, m) => sum + (stats.get(m.title)?.questions ?? 0), 0);
+        const list = group.modules.map((m) => stats.get(m.title) ?? emptyStats);
+        const total = list.reduce((sum, s) => sum + s.questions, 0);
+        const attempted = list.reduce((sum, s) => sum + s.attempted, 0);
+        const correct = list.reduce((sum, s) => sum + s.correct, 0);
         return (
           <section key={group.title} className="space-y-4">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <h3 className="font-display text-lg font-semibold text-foreground">{group.title}</h3>
               <p className="text-xs font-semibold text-muted-foreground">
-                <span className="text-foreground">0</span>/{total} attempted
-                <span className="ml-4 text-foreground">0</span>/{total} correct
+                <span className="text-foreground">{attempted}</span>/{total} attempted
+                <span className="ml-4 text-foreground">{correct}</span>/{total} correct
               </p>
             </div>
 
@@ -153,13 +173,14 @@ export function ModulesSection() {
                   key={m.title}
                   module={m}
                   accent={accent}
-                  stats={stats.get(m.title) ?? { questions: 0, subtopics: [] }}
+                  stats={stats.get(m.title) ?? emptyStats}
                 />
               ))}
             </div>
           </section>
         );
       })}
+
     </div>
   );
 }
@@ -176,6 +197,16 @@ function ModuleCard({
   const [open, setOpen] = useState(false);
   const subtopics = stats.subtopics;
   const count = stats.questions;
+  const accuracy = stats.attempted ? Math.round((stats.correct / stats.attempted) * 100) : null;
+  const filledSegments = count ? Math.round((stats.attempted / count) * 12) : 0;
+  const accuracyClass =
+    accuracy === null
+      ? "text-muted-foreground"
+      : accuracy >= 80
+        ? "text-emerald"
+        : accuracy >= 50
+          ? "text-amber"
+          : "text-flame";
 
   return (
     <article className="flex flex-col rounded-3xl border border-border bg-card p-5 shadow-[0_20px_60px_-45px_rgba(20,40,90,0.45)]">
@@ -189,17 +220,21 @@ function ModuleCard({
 
         <div className="mt-5 flex items-center justify-between text-[11px] font-bold tracking-[0.12em] text-muted-foreground uppercase">
           <span>
-            Accuracy <span className="ml-1 text-sm text-muted-foreground">—</span>
+            Accuracy <span className={`ml-1 text-sm ${accuracyClass}`}>{accuracy === null ? "—" : `${accuracy}%`}</span>
           </span>
           <span>
-            Completed <span className="ml-1 text-sm text-foreground">0</span>/{count}
+            Completed <span className="ml-1 text-sm text-foreground">{stats.attempted}</span>/{count}
           </span>
         </div>
         <div className="mt-2 flex gap-1.5">
           {Array.from({ length: 12 }).map((_, i) => (
-            <span key={i} className="h-1.5 flex-1 rounded-full bg-muted" />
+            <span
+              key={i}
+              className={`h-1.5 flex-1 rounded-full ${i < filledSegments ? "bg-emerald" : "bg-muted"}`}
+            />
           ))}
         </div>
+
       </div>
 
       <div className="mt-5 flex items-center gap-2 pt-0">

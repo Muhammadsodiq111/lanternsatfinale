@@ -17,6 +17,8 @@ import {
   subtopicsFromRows,
   type Level,
 } from "@/lib/practice";
+import { useTrackerProgress } from "@/lib/tracker-progress";
+
 
 type Search = { module: string; mode: "practice" | "diagnostic" };
 
@@ -45,14 +47,26 @@ export const Route = createFileRoute("/_authenticated/practice/")({
 type Status = "correct" | "wrong";
 
 function PracticePage() {
-  const { module: moduleTitle } = Route.useSearch();
+  const { module: moduleTitle, mode } = Route.useSearch();
   const navigate = useNavigate();
+  const { entry, setStatus, toggleReviewed } = useTrackerProgress();
 
   const { data: rows = [] } = useQuery(practiceQuestionsQuery(moduleTitle));
-  const subtopics = useMemo(
+  const allSubtopics = useMemo(
     () => subtopicsFromRows(rows).filter((s) => s.questions.length > 0),
     [rows],
   );
+
+  // Diagnostic mode: a short mixed set (up to 2 per difficulty) drawn from the module.
+  const subtopics = useMemo(() => {
+    if (mode !== "diagnostic") return allSubtopics;
+    const pool = allSubtopics.flatMap((s) => s.questions);
+    const picked = DIFFICULTY_LEVELS.flatMap((level) =>
+      pool.filter((q) => q.level === level).slice(0, 2),
+    );
+    if (picked.length === 0) return [];
+    return [{ id: "diagnostic", title: "Diagnostic set", questions: picked }];
+  }, [allSubtopics, mode]);
 
   const [openSubtopic, setOpenSubtopic] = useState("");
   const [current, setCurrent] = useState({ subtopic: "", questionId: "" });
@@ -60,11 +74,12 @@ function PracticePage() {
   const [selected, setSelected] = useState<number | null>(null);
   const [typed, setTyped] = useState("");
   const [checked, setChecked] = useState(false);
-  const [understood, setUnderstood] = useState(false);
   const [showDesmos, setShowDesmos] = useState(false);
   const [hideTimer, setHideTimer] = useState(false);
   const [seconds, setSeconds] = useState(0);
   const [widgets, setWidgets] = useState<WidgetId[]>([]);
+  const [showSummary, setShowSummary] = useState(false);
+
 
   useEffect(() => {
     const exists = subtopics.some(
@@ -76,8 +91,8 @@ function PracticePage() {
     setCurrent({ subtopic: first?.id ?? "", questionId: first?.questions[0]?.id ?? "" });
     setSelected(null);
     setChecked(false);
-    setUnderstood(false);
     setShowDesmos(false);
+
   }, [subtopics, current.subtopic, current.questionId]);
 
   const subtopic = subtopics.find((s) => s.id === current.subtopic) ?? subtopics[0];
@@ -94,8 +109,12 @@ function PracticePage() {
     setSelected(null);
     setTyped("");
     setChecked(false);
-    setUnderstood(false);
     setShowDesmos(false);
+  }
+
+  function record(id: string, status: Status) {
+    setResults((r) => ({ ...r, [id]: status }));
+    setStatus(id, status === "correct" ? "correct" : "incorrect");
   }
 
   function check() {
@@ -103,22 +122,24 @@ function PracticePage() {
     if (question.type === "free") {
       if (!typed.trim()) return;
       setChecked(true);
-      setResults((r) => ({
-        ...r,
-        [question.id]: matchesFreeAnswer(typed, question.answerText) ? "correct" : "wrong",
-      }));
+      record(question.id, matchesFreeAnswer(typed, question.answerText) ? "correct" : "wrong");
       return;
     }
     if (selected === null) return;
     setChecked(true);
-    setResults((r) => ({ ...r, [question.id]: selected === question.answer ? "correct" : "wrong" }));
+    record(question.id, selected === question.answer ? "correct" : "wrong");
   }
+
 
 
   function next() {
     const all = subtopics.flatMap((s) => s.questions.map((q) => ({ s: s.id, q: q.id })));
     if (all.length === 0 || !question) return;
     const i = all.findIndex((x) => x.q === question.id);
+    if (mode === "diagnostic" && i === all.length - 1) {
+      setShowSummary(true);
+      return;
+    }
     const nxt = all[(i + 1) % all.length]!;
     setOpenSubtopic(nxt.s);
     goTo(nxt.s, nxt.q);
@@ -128,8 +149,14 @@ function PracticePage() {
     setWidgets((w) => (w.includes(id) ? w.filter((x) => x !== id) : [...w, id]));
   }
 
+  const diagQuestions = subtopics.flatMap((s) => s.questions);
+  const diagAnswered = diagQuestions.filter((q) => results[q.id]).length;
+  const diagCorrect = diagQuestions.filter((q) => results[q.id] === "correct").length;
+  const diagAccuracy = diagAnswered ? Math.round((diagCorrect / diagAnswered) * 100) : 0;
+
   const completedPts = Object.values(results).filter((r) => r === "correct").length * 8;
   const answeredInSubtopic = (subtopic?.questions ?? []).filter((q) => results[q.id]).length;
+
 
   return (
     <div className="flex min-h-screen flex-col bg-sky">
@@ -154,11 +181,17 @@ function PracticePage() {
         </span>
 
         <div className="mx-auto flex min-w-0 items-center gap-3">
+          {mode === "diagnostic" ? (
+            <span className="shrink-0 rounded-lg bg-primary px-3 py-1 text-xs font-bold text-primary-foreground">
+              Diagnostic {Math.min(diagAnswered + 1, diagQuestions.length)}/{diagQuestions.length}
+            </span>
+          ) : null}
           <h1 className="font-display truncate text-base font-semibold text-foreground">{moduleTitle}</h1>
           <span className="hidden truncate rounded-lg bg-accent px-3 py-1 text-xs font-semibold text-primary sm:block">
             {subtopic?.title ?? ""}
           </span>
         </div>
+
 
         <div className="flex items-center gap-2">
           {(
@@ -254,9 +287,40 @@ function PracticePage() {
         </aside>
 
         <main className="min-w-0 flex-1 p-4">
-          {!question ? (
+          {showSummary ? (
+            <div className="grid min-h-[calc(100vh-7rem)] place-items-center rounded-3xl border border-border bg-card p-6">
+              <div className="max-w-sm text-center">
+                <p className="text-xs font-bold tracking-[0.12em] text-muted-foreground uppercase">
+                  Diagnostic complete
+                </p>
+                <p className="font-display mt-2 text-5xl font-semibold text-foreground">{diagAccuracy}%</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {diagCorrect} correct out of {diagAnswered} answered
+                </p>
+                <div className="mt-6 flex flex-wrap justify-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      navigate({ to: "/practice", search: { module: moduleTitle, mode: "practice" } })
+                    }
+                    className="rounded-xl bg-emerald px-5 py-2.5 text-sm font-bold text-primary-foreground"
+                  >
+                    Practice this module ›
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate({ to: "/dashboard", search: { section: "Modules" } })}
+                    className="rounded-xl border border-border px-5 py-2.5 text-sm font-bold text-foreground"
+                  >
+                    Back to modules
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : !question ? (
             <div className="min-h-[calc(100vh-7rem)] rounded-3xl border border-border bg-card" />
           ) : (
+
           <div className="flex min-h-[calc(100vh-7rem)] flex-col overflow-hidden rounded-3xl border border-border bg-card">
             <div className="grid flex-1 md:grid-cols-2">
               <div className="space-y-4 border-border p-6 md:border-r">
@@ -365,10 +429,11 @@ function PracticePage() {
                   <label className="mt-auto flex items-center gap-2 border-t border-border pt-4 text-sm font-semibold text-foreground">
                     <input
                       type="checkbox"
-                      checked={understood}
-                      onChange={(e) => setUnderstood(e.target.checked)}
+                      checked={entry(question.id).reviewed}
+                      onChange={() => toggleReviewed(question.id)}
                       className="h-4 w-4 accent-emerald"
                     />
+
                     I understand this problem
                   </label>
                 </div>
