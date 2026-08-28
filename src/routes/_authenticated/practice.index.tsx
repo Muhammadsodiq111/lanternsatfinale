@@ -287,9 +287,40 @@ function PracticePage() {
         </aside>
 
         <main className="min-w-0 flex-1 p-4">
-          {!question ? (
+          {showSummary ? (
+            <div className="grid min-h-[calc(100vh-7rem)] place-items-center rounded-3xl border border-border bg-card p-6">
+              <div className="max-w-sm text-center">
+                <p className="text-xs font-bold tracking-[0.12em] text-muted-foreground uppercase">
+                  Diagnostic complete
+                </p>
+                <p className="font-display mt-2 text-5xl font-semibold text-foreground">{diagAccuracy}%</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {diagCorrect} correct out of {diagAnswered} answered
+                </p>
+                <div className="mt-6 flex flex-wrap justify-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      navigate({ to: "/practice", search: { module: moduleTitle, mode: "practice" } })
+                    }
+                    className="rounded-xl bg-emerald px-5 py-2.5 text-sm font-bold text-primary-foreground"
+                  >
+                    Practice this module ›
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate({ to: "/dashboard", search: { section: "Modules" } })}
+                    className="rounded-xl border border-border px-5 py-2.5 text-sm font-bold text-foreground"
+                  >
+                    Back to modules
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : !question ? (
             <div className="min-h-[calc(100vh-7rem)] rounded-3xl border border-border bg-card" />
           ) : (
+
           <div className="flex min-h-[calc(100vh-7rem)] flex-col overflow-hidden rounded-3xl border border-border bg-card">
             <div className="grid flex-1 md:grid-cols-2">
               <div className="space-y-4 border-border p-6 md:border-r">
